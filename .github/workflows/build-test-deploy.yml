@@ -1,143 +1,141 @@
 name: Build - Test - Deploy
 
 on:
-  push:
-    branches:
-      - main
+    push:
+        branches:
+            - main
 
 jobs:
-  build-and-test:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-      - name: Setup Node
-        uses: actions/setup-node@v3
-        with:
-          node-version: "16"
+    build-and-test:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v3
+              with:
+                  fetch-depth: 0
+            - name: Setup Node
+              uses: actions/setup-node@v3
+              with:
+                  node-version: '16'
 
-      - name: Install
-        run: npm install
+            - name: Install
+              run: npm install
 
-      - name: Run tests
-        run: npm test
+            - name: Run tests
+              run: npm test
 
-  terraform-infra:
-    runs-on: ubuntu-latest
-    needs: [build-and-test]
-    env:
-      AWS_PROFILE: aws-deployer
-    permissions:
-      contents: read
-      packages: write
+    terraform-infra:
+        runs-on: ubuntu-latest
+        needs: [build-and-test]
+        env:
+            AWS_PROFILE: aws-deployer
+        permissions:
+            contents: read
+            packages: write
 
-    steps:
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v1
-        with:
-          terraform_version: 1.5.7
+        steps:
+            - name: Setup Terraform
+              uses: hashicorp/setup-terraform@v1
+              with:
+                  terraform_version: 1.5.7
 
-      - name: Checkout repository
-        uses: actions/checkout@v3
+            - name: Checkout repository
+              uses: actions/checkout@v3
 
-      - name: Configure AWS Credentials
-        uses: Fooji/create-aws-profile-action@v1
-        with:
-          profile: aws-deployer
-          region: us-east-1
-          key: ${{ secrets.DEPLOYER_AWS_ACCESS_KEY_ID }}
-          secret: ${{ secrets.DEPLOYER_AWS_SECRET_ACCESS_KEY }}
+            - name: Configure AWS Credentials
+              uses: Fooji/create-aws-profile-action@v1
+              with:
+                  profile: aws-deployer
+                  region: us-east-1
+                  key: ${{ secrets.DEPLOYER_AWS_ACCESS_KEY_ID }}
+                  secret: ${{ secrets.DEPLOYER_AWS_SECRET_ACCESS_KEY }}
 
-      - name: Terraform Init
-        id: init
-        working-directory: ./config/infra
-        run: terraform init
+            - name: Terraform Init
+              id: init
+              working-directory: ./config/infra
+              run: terraform init
 
-      - name: Terraform Deploy Infra
-        id: apply
-        working-directory: ./config/infra
-        run: |
-          terraform apply -auto-approve      
+            - name: Terraform Deploy Infra
+              id: apply
+              working-directory: ./config/infra
+              run: |
+                  terraform apply -auto-approve
 
-  build-and-push-image:
-    needs: [terraform-infra]
-    runs-on: ubuntu-latest
-    env:
-      REGISTRY: 347632749353.dkr.ecr.us-east-1.amazonaws.com
-      IMAGE_TAG: ${{ github.sha }}
-      REPOSITORY: lifi
+    build-and-push-image:
+        needs: [terraform-infra]
+        runs-on: ubuntu-latest
+        env:
+            REGISTRY: 347632749353.dkr.ecr.us-east-1.amazonaws.com
+            IMAGE_TAG: ${{ github.sha }}
+            REPOSITORY: lifi
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v3
 
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-region: us-east-1
-          aws-access-key-id: ${{ secrets.DEPLOYER_AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.DEPLOYER_AWS_SECRET_ACCESS_KEY }}
+            - name: Configure AWS Credentials
+              uses: aws-actions/configure-aws-credentials@v1
+              with:
+                  aws-region: us-east-1
+                  aws-access-key-id: ${{ secrets.DEPLOYER_AWS_ACCESS_KEY_ID }}
+                  aws-secret-access-key: ${{ secrets.DEPLOYER_AWS_SECRET_ACCESS_KEY }}
 
-      - name: Login to Private ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
+            - name: Login to Private ECR
+              id: login-ecr
+              uses: aws-actions/amazon-ecr-login@v1
 
-      # Avoids rate limits error on pulling from public ECR
-      - name: Login to Public ECR
-        uses: docker/login-action@v2
-        with:
-          registry: public.ecr.aws
-          username: ${{ secrets.DEPLOYER_AWS_ACCESS_KEY_ID }}
-          password: ${{ secrets.DEPLOYER_AWS_SECRET_ACCESS_KEY }}
+            # Avoids rate limits error on pulling from public ECR
+            - name: Login to Public ECR
+              uses: docker/login-action@v2
+              with:
+                  registry: public.ecr.aws
+                  username: ${{ secrets.DEPLOYER_AWS_ACCESS_KEY_ID }}
+                  password: ${{ secrets.DEPLOYER_AWS_SECRET_ACCESS_KEY }}
 
-      - name: Build, tag, and push docker image to Amazon ECR Public
-        run: |
-          docker build -t $REGISTRY/$REPOSITORY:$IMAGE_TAG .
-          docker push $REGISTRY/$REPOSITORY:$IMAGE_TAG
+            - name: Build, tag, and push docker image to Amazon ECR Public
+              run: |
+                  docker build -t $REGISTRY/$REPOSITORY:$IMAGE_TAG .
+                  docker push $REGISTRY/$REPOSITORY:$IMAGE_TAG
 
-  terraform-services:
-    needs: [terraform-infra]
-    env:
-      AWS_PROFILE: aws-deployer
-      TF_VAR_image_tag: ${{ github.sha }}
+    terraform-services:
+        needs: [terraform-infra]
+        env:
+            AWS_PROFILE: aws-deployer
+            TF_VAR_image_tag: ${{ github.sha }}
+            TF_VAR_postgres_password: ${{ secrets.POSTGRES_PASSWORD }}
+            TF_VAR_redis_password: ${{ secrets.REDIS_PASSWORD }}
 
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
+        runs-on: ubuntu-latest
+        steps:
+            - name: Setup Terraform
+              uses: hashicorp/setup-terraform@v1
+              with:
+                  terraform_version: 1.5.7
 
-    steps:
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v1
-        with:
-          terraform_version: 1.5.7
+            - name: Checkout repository
+              uses: actions/checkout@v3
 
-      - name: Checkout repository
-        uses: actions/checkout@v3
+            - name: Configure AWS Credentials
+              uses: Fooji/create-aws-profile-action@v1
+              with:
+                  profile: aws-deployer
+                  region: us-east-1
+                  key: ${{ secrets.DEPLOYER_AWS_ACCESS_KEY_ID }}
+                  secret: ${{ secrets.DEPLOYER_AWS_SECRET_ACCESS_KEY }}
 
-      - name: Configure AWS Credentials
-        uses: Fooji/create-aws-profile-action@v1
-        with:
-          profile: aws-deployer
-          region: us-east-1
-          key: ${{ secrets.DEPLOYER_AWS_ACCESS_KEY_ID }}
-          secret: ${{ secrets.DEPLOYER_AWS_SECRET_ACCESS_KEY }}
+            - name: Terraform Init
+              id: init
+              working-directory: ./config/prod
+              run: terraform init
 
-      - name: Terraform Init
-        id: init
-        working-directory: ./config/prod
-        run: terraform init
+            - name: Terraform Plan
+              id: plan
+              working-directory: ./config/prod
+              run: |
+                  terraform plan
 
-      - name: Terraform Plan
-        id: plan
-        working-directory: ./config/prod
-        run: |
-          terraform plan
-
-      - name: Terraform Docker Image onto AWS
-        id: apply
-        working-directory: ./config/prod
-        run: |
-          terraform apply -auto-approve
+            - name: Terraform Docker Image onto AWS
+              id: apply
+              working-directory: ./config/prod
+              run: |
+                  terraform apply -auto-approve
