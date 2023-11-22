@@ -9,8 +9,15 @@ const redisClient = createClient({
     url: HOST
   });
   
+const cache = async () => {
+    return await redisClient.connect();
+};
   
+const disconnect = async (client) => {
+    return await client.disconnect();
+}
   
 module.exports = {
-    redisClient
+    cache,
+    disconnect
 };
