@@ -69,6 +69,22 @@ The infrastructure is defined in Terraform, and is deployed to AWS using Github 
 
 If new environments are needed, they can reference the `modules` and simply just use the same codebase as `prod`, with different variable
 
+## 2.1 Deployment
+
+All deployments are handled by CICD.
+
+Steps:
+
+1. First, we build and test the code, using node only
+2. Subsequently, shared resources (ECR repo, IAM roles) are created by the `terraform-infra` CI step.
+3. Then, the docker image is built and pushed to ECR by the `build-and-push-image` CI step.
+4. Finally, the service is deployed to ECS by the `terraform-services` CI step, using the referenced image
+
+## 2.2 Secrets and variables
+
+-   Secrets are managed simply by setting them in the CI environment variables, and injected into the application via terraform variables
+-   Other variables (e.g. the docker image tag) is set by using the git commit hash, which is injected into the CI environment variables by default
+
 ## 3. Optionals
 
 -   CW Logs are used

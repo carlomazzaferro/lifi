@@ -30,5 +30,5 @@ variable "postgres_user" {
 
 variable "image_tag" {
   type        = string
-  description = "relayer image name"
+  description = "tag of the docker image"
 }
