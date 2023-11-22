@@ -29,10 +29,6 @@ jobs:
         needs: [build-and-test]
         env:
             AWS_PROFILE: aws-deployer
-        permissions:
-            contents: read
-            packages: write
-
         steps:
             - name: Setup Terraform
               uses: hashicorp/setup-terraform@v1

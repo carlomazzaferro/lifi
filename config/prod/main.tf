@@ -73,7 +73,7 @@ module "service" {
   ingress_ipv6_cdir_blocks = []
   service_security_groups  = flatten([module.network.allow_all_sg, module.network.ecs_task_sg])
   container_env_vars = [
-    { name = "POSTGRES_HOST", value = module.db.db_instance_endpoint },
+    { name = "POSTGRES_HOST", value = module.db.db_instance_address },
     { name = "POSTGRES_DB", value = "todo" },
     { name = "POSTGRES_USER", value = var.postgres_user },
     { name = "POSTGRES_PASSWORD", value = var.postgres_password },
