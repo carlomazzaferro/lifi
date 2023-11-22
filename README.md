@@ -117,3 +117,5 @@ Steps:
 ```
 
 Screenshots:
+![Logs](./assets/sc-logs.png)
+![ECS Dashboard](./assets/sc-app.png)
