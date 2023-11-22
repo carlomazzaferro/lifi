@@ -29,25 +29,26 @@ locals {
 module "db" {
   source         = "../modules/db"
   identifier     = "rds-postgres-lifi-${var.environment}"
-  instance_class = "db.t2.micro"
+  instance_class = "db.t3.micro"
 
   name     = "todo" // db name
   username = var.postgres_user
   password = var.postgres_password
   port     = "5432"
 
-  maintenance_window = "Mon:00:00-Mon:03:00"
-
-  tags = {
-    Environment = var.environment
-  }
-
-  vpc_id = module.network.vpc_id
+  maintenance_window = "Fri:00:00-Fri:03:00"
+  allocated_storage  = 5
+  vpc_id             = module.network.vpc_id
 
   environment                = var.environment
   db_security_group_id       = module.sgs.rds_sg_id
   db_subnet_group_subnet_ids = module.network.public_subnets
-  publicly_accessible        = true
+
+  publicly_accessible = true
+  tags = {
+    Environment = var.environment
+  }
+
 }
 
 
@@ -71,13 +72,13 @@ module "service" {
   ingress_cdir_blocks      = ["0.0.0.0/0"]
   ingress_ipv6_cdir_blocks = []
   service_security_groups  = flatten([module.network.allow_all_sg, module.network.ecs_task_sg])
-  container_env_vars = {
-    POSTGRES_HOST     = module.db.db_instance_endpoint,
-    POSTGRES_DB       = "todo",
-    POSTGRES_USER     = var.postgres_user,
-    POSTGRES_PASSWORD = var.postgres_password,
-    REDIS_HOST        = "redis://default:${var.redis_password}@${module.cache.redis_instance_address}:${module.cache.redis_instance_port}",
-  }
+  container_env_vars = [
+    { name = "POSTGRES_HOST", value = module.db.db_instance_endpoint },
+    { name = "POSTGRES_DB", value = "todo" },
+    { name = "POSTGRES_USER", value = var.postgres_user },
+    { name = "POSTGRES_PASSWORD", value = var.postgres_password },
+    { name = "REDIS_HOST", value = "redis://default:${var.redis_password}@${module.cache.redis_instance_address}:${module.cache.redis_instance_port}" }
+  ]
 }
 
 module "network" {

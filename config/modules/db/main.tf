@@ -17,8 +17,8 @@ resource "aws_db_instance" "db" {
   db_subnet_group_name   = aws_db_subnet_group.default.name
   parameter_group_name   = aws_db_parameter_group.rds_postgres.name
 
-  availability_zone = var.availability_zone
-
+  availability_zone           = var.availability_zone
+  allocated_storage           = var.allocated_storage
   allow_major_version_upgrade = true
   auto_minor_version_upgrade  = true
   apply_immediately           = true

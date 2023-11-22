@@ -15,6 +15,12 @@ variable "name" {
   default     = "lifi"
 }
 
+variable "allocated_storage" {
+  description = "The allocated storage in gigabytes"
+  type        = number
+  default     = 20
+}
+
 variable "username" {
   description = "Username for the master DB user"
   type        = string
