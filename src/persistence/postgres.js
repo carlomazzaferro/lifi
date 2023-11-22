@@ -17,13 +17,6 @@ async function init() {
         timeout: 10000,
         waitForDns: true,
     });
-    console.log({
-      HOST,
-      USER,
-      PASSWORD,
-      DB,
-    })
-
     client = new Client({
         host: HOST,
         user: USER,
