@@ -1,3 +1,8 @@
+resource "aws_cloudwatch_log_group" "service" {
+  name = "/fargate/service/${var.environment}-${var.container_family}"
+}
+
+
 resource "aws_ecs_task_definition" "service" {
   family                   = "${var.environment}-${var.container_family}"
   requires_compatibilities = ["FARGATE"]
@@ -20,9 +25,9 @@ resource "aws_ecs_task_definition" "service" {
       logConfiguration = {
         logDriver = "awslogs",
         options = {
-          awslogsGroup        = "/fargate/service/${var.environment}-${var.container_family}"
-          awslogsRegion       = var.region
-          awsLogsStreamPrefix = "ecs"
+          awslogs-group         = aws_cloudwatch_log_group.service.name
+          awslogs-region        = var.region
+          awslogs-stream-prefix = "ecs"
         }
       }
       portMappings = [

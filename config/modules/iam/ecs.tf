@@ -13,18 +13,39 @@ data "aws_iam_policy_document" "cloudwatch_assume_role" {
     actions = ["sts:AssumeRole"]
   }
 }
-
 data "aws_iam_policy_document" "task_execution_cloudwatch_access" {
   statement {
     effect = "Allow"
     actions = [
-      "logs:*",
+      "logs:*"
     ]
-    resources = [      
-      "arn:aws:logs:us-east-1:*:*", 
-      "arn:aws:logs:us-east-2:*:*", 
-      "arn:aws:logs:us-west-1:*:*", 
-      "arn:aws:logs:us-west-2:*:*"]
+    resources = [
+      "arn:aws:logs:us-east-1:*:*",
+      "arn:aws:logs:us-east-2:*:*",
+      "arn:aws:logs:us-west-1:*:*",
+      "arn:aws:logs:us-west-2:*:*"
+    ]
+  }
+  statement {
+    effect = "Allow"
+    actions = [
+      "ecr:BatchCheckLayerAvailability",
+      "ecr:BatchGetImage",
+      "ecr:CompleteLayerUpload",
+      "ecr:GetDownloadUrlForLayer",
+      "ecr:InitiateLayerUpload",
+      "ecr:PutImage",
+      "ecr:UploadLayerPart"
+    ]
+    resources = ["*"]
+  }
+  statement {
+    actions = [
+      "ecr:GetAuthorizationToken"
+    ]
+    effect    = "Allow"
+    resources = ["*"]
+
   }
 }
 
