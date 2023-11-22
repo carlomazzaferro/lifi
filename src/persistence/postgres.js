@@ -1,5 +1,4 @@
 const waitPort = require('wait-port');
-const fs = require('fs');
 const { Client } = require('pg');
 
 const {
@@ -24,7 +23,7 @@ async function init() {
       PASSWORD,
       DB,
     })
-    
+
     client = new Client({
         host: HOST,
         user: USER,

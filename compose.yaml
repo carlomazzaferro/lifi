@@ -8,34 +8,47 @@
 # database or a cache. For examples, see the Awesome Compose repository:
 # https://github.com/docker/awesome-compose
 services:
-  server:
-    build:
-      context: .
-    environment:
-      NODE_ENV: production
-      POSTGRES_DB: todo
-      POSTGRES_USER: lifi
-      POSTGRES_PASSWORD: admin
-      POSTGRES_HOST: db
-    ports:
-      - 3000:3000
-    depends_on:
-      db:
-        condition: service_healthy
-  db:
-    image: postgres
-    restart: always
-    user: postgres
-    environment:
-      - POSTGRES_USER=lifi
-      - POSTGRES_PASSWORD=admin
-      - POSTGRES_DB=todo
-    ports:
-      - "5432:5432"
-    expose:
-      - "5432:5432"
-    healthcheck:
-      test: [ "CMD", "pg_isready", "-U", "lifi", "-d", "users" ]
-      interval: 10s
-      timeout: 5s
-      retries: 3
+    server:
+        build:
+            context: .
+        environment:
+            NODE_ENV: production
+            POSTGRES_DB: todo
+            POSTGRES_USER: lifi
+            POSTGRES_PASSWORD: admin
+            POSTGRES_HOST: db
+            REDIS_HOST: redis://redis:6379
+        ports:
+            - 3000:3000
+        depends_on:
+            redis:
+                condition: service_healthy
+            db:
+                condition: service_healthy
+    db:
+        image: postgres
+        restart: always
+        user: postgres
+        environment:
+            - POSTGRES_USER=lifi
+            - POSTGRES_PASSWORD=admin
+            - POSTGRES_DB=todo
+        ports:
+            - '5432:5432'
+        expose:
+            - '5432:5432'
+        healthcheck:
+            test: ['CMD', 'pg_isready', '-U', 'lifi', '-d', 'todo']
+            interval: 10s
+            timeout: 5s
+            retries: 3
+    redis:
+        container_name: redis-cache
+        image: redis
+        ports:
+            - '6379:6379'
+        healthcheck:
+            test: ['CMD', 'redis-cli', 'ping']
+            interval: 3s
+            timeout: 5s
+            retries: 10
