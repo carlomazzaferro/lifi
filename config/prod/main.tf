@@ -11,6 +11,8 @@ provider "aws" {
 }
 
 
+data "aws_caller_identity" "current" {}
+
 # Fetch AZs in the current region
 data "aws_availability_zones" "available" {}
 
